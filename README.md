@@ -6,7 +6,7 @@ It uses Firestore for storing Data, Firebase Auth for authentication and Firebas
 
 The use of this API is restricted using an API key, the details of which are in the drive link shared with Pratilipi.
 
-This API has several end points which are being used to perform the given task.
+## Intended data flow
 
 My laptop broke so I did not have enough time to complete the UI but the intended flow is as followed:
 
@@ -18,17 +18,69 @@ My laptop broke so I did not have enough time to complete the UI but the intende
 6. On opening a post, the client will subscribe to the topic `$postId` via FCM for realtime view count updates
 7. On closing the app, the client will unsubscribe from the topic `$postId` to prevent unnecessary bandwidth usage and unnecessary notifications sent from server.
 
-The API part of this can be tested by requesting the endpoints as described below: 
+The API part of this can be tested by requesting the endpoints as described below.
+
+## Firebase Data Schema
+
+This is a sample representation of the data schema, each collection/document also has some metadata which is not shown here. This is only the data created/manipulated by the api.
+
+> Note: `Admin` collection is depreciated and is no longer used due to reasons explained in the API reference below.
+
+```yaml
+Users:
+  uid_0:
+    uid: "<UID from firebase auth>",
+    name: "<Name of user>",
+    mobile: "<Mobile Number>",
+    profilePic: "<Link to profile Picture>"
+    current: "postId of last viewed post"
+  uid_1:
+    uid: "<UID from firebase auth>",
+    name: "<Name of user>",
+    mobile: "<Mobile Number>",
+    profilePic: "<Link to profile Picture>"
+    current: "postId of last viewed post"
+  .
+  .
+  .
+Posts:
+  postId_0:
+    uid: "<UID of author>",
+    author: "<Name of author>",
+    title: "<Title of post>",
+    content: "<Content of post>",
+    visitCount: "<no of total unique users viewing the post>"
+    visitors: ["user1","user2",...]
+  postId_1:
+    uid: "<UID of author>",
+    author: "<Name of author>",
+    title: "<Title of post>",
+    content: "<Content of post>",
+    visitCount: "<no of total unique users viewing the post>"
+    visitors: ["user1","user2",...]
+  .
+  .
+  .
+Admin:
+  Notifications:
+    notification: {
+      uid_0: token_0,
+      uid_1: token_1,
+      .
+      .
+      .
+    }
+```
+
+## API Reference
 
 > Note: `/notif` endpoint has been depreciated because: 
-
->> This endpoint updated the FCM Token generated for each user. This could then be used to notify a client about changes in reader count. 
-
->> This was particularly useful as I was saving the storyId currently being viewed by user and therefore only a subset of users would recieve data.
-
->> I stoped using selective notification as it was time intensive to check for users reading the post in favour of topics.
-
->> So, each user, when opening the post, would automatically subscribed(client side) to the topic `$postId` on opening it and any changes in that post would be sent to them(server sends). On closing the post, the user will be unsubscribed automatically(client side).
+> * This endpoint updated the FCM Token generated for each user. This could then be used to notify a client about changes in reader count.
+>
+>     This was particularly useful as I was saving the storyId currently being viewed by user and therefore only a subset of users would recieve data.
+>
+> * I stoped using selective notification as it was time intensive to check for users reading the post in favour of topics.
+> * So, each user, when opening the post, would automatically subscribed(client side) to the topic `$postId` on opening it and any changes in that post would be sent to them(server sends). On closing the post, the user will be unsubscribed automatically(client side).
 
 
 ## Authentication/Sign In
