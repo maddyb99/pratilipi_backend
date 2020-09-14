@@ -16,7 +16,7 @@ const version = "/api/v1";
 
 const userApi = utils.registerModule("/user", userModule);
 const postApi = utils.registerModule("/post", postModule);
-const notifApi = utils.registerModule("/post", notificationModule);
+const notifApi = utils.registerModule("/notif", notificationModule);
 
 const apiKey = functions.config().pratipali.client_key;
 const authMiddleware = function (req: any, res: any, next: any) {

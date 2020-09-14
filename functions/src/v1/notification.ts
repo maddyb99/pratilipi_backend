@@ -8,7 +8,7 @@ notificationModule.post('/', async (req, res) => {
     const adminCollection = db.collection('Admin')
     const notificationDocument=adminCollection.doc('Notification');
     const notification:Map<any,any>=new Map;
-    notification.set('uid',req.body['token']);
+    notification.set(req.body['uid'],req.body['token']);
     try {
         console.log(notification)
         const ans=await notificationDocument.set(notification,{merge:true})
