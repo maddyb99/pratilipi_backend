@@ -1,5 +1,5 @@
 import * as express from "express";
-import { db, updatedb } from "../index";
+import { db, notif, updatedb } from "./main";
 
 class Post {
   constructor(
@@ -9,7 +9,7 @@ class Post {
     public uid: string = "",
     public visitors: Array<string> = [],
     public visitCount: Number = 0
-  ) { }
+  ) {}
 }
 
 const userReqValidator = (arr: any[], target: any[]) =>
@@ -29,7 +29,7 @@ postModule.post("/", async (req, res) => {
       author: req.body["author"],
       uid: req.body["uid"],
       visitors: [],
-      visitCount: 0
+      visitCount: 0,
     };
     console.log(post);
     const newDoc = await db.collection(postCollection).add(post);
@@ -51,7 +51,9 @@ postModule.post("/", async (req, res) => {
     console.log(error);
     res
       .status(400)
-      .send(`Post should only contains firstName, lastName and location!${error}`);
+      .send(
+        `Post should only contains firstName, lastName and location!${error}`
+      );
   }
 });
 
@@ -69,44 +71,78 @@ postModule.patch("/:postId", async (req, res) => {
   res.status(204).send(`Update a new post: ${updatedDoc}`);
 });
 
-
 // View all posts
 postModule.get("/", async (req, res) => {
   console.log("all");
   console.log(req.params);
   // let findoc;
   // let response=undefined;
-  if (req.query !== undefined && ("postId" in req.query)) {
+  if (
+    req.query !== undefined &&
+    "postId" in req.query &&
+    "userId" in req.query
+  ) {
     console.log("postId" in req.query);
     const postId: string = req.query.postId as string;
     const userId: string = req.query.userId as string;
     console.log(postId);
-    await db.collection(postCollection)
+    await db
+      .collection(postCollection)
       .doc(postId)
       .get()
       .then((doc) => {
         console.log("cp1");
         if (doc.get("visitors").includes(userId))
-          return res.status(200).send(doc);
+          return db
+            .collection("Users")
+            .doc(userId)
+            .set({ current: postId }, { merge: true })
+            .then(() => res.status(200).send(doc.data()));
         else {
           console.log("cp2");
-          const ans = doc.ref.update({ visitors: doc.get("visitors")[0] === undefined ? [userId] : updatedb.FieldValue.arrayUnion(userId), visitCount: updatedb.FieldValue.increment(1) });
-          console.log(doc.data());
-          console.log(ans)
-          return res.status(200).send(doc.data());
+          return db
+            .collection("Users")
+            .doc(userId)
+            .set({ current: postId }, { merge: true })
+            .then(() =>
+              doc.ref
+                .update({
+                  visitors:
+                    doc.get("visitors")[0] === undefined
+                      ? [userId]
+                      : updatedb.FieldValue.arrayUnion(userId),
+                  visitCount: updatedb.FieldValue.increment(1),
+                })
+                .then(() =>
+                  doc.ref.get().then((newdoc) => {
+                    const payload = {
+                    data: {
+                      visitCount:newdoc.get('visitCount'),
+                      visitors:newdoc.get('visitors'),
+                    },
+                    topic:postId
+                  };
+                    const ans=notif.send(payload);
+                    console.log(ans);
+                    return res.status(200).send(newdoc.data());
+                  })
+                )
+            );
         }
       })
       .catch((error) => res.status(400).send(`Cannot get post: ${error}`));
-  }
-  else {
+  } else {
     console.log(req.query);
-    console.log(req.query !== undefined && ("postId" in req.query));
+    console.log(req.query !== undefined && "postId" in req.query);
     let arr: any;
     arr = [];
-    return db.collection(postCollection).get().then((snap) => {
-      snap.docs.forEach((doc) => arr.push(doc.data()));
-      return res.status(200).send(arr);
-    });
+    return db
+      .collection(postCollection)
+      .get()
+      .then((snap) => {
+        snap.docs.forEach((doc) => arr.push(doc.data()));
+        return res.status(200).send(arr);
+      });
   }
   return;
 });

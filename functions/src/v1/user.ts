@@ -1,5 +1,5 @@
 import * as express from "express";
-import { db } from "../index";
+import { db } from "./main";
 // import { admin } from 'firebase-admin/lib/database';
 // import * from admin
 // import { apiKey } from './main';
