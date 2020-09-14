@@ -8,6 +8,19 @@ The use of this API is restricted using an API key, the details of which are in 
 
 This API has several end points which are being used to perform the given task.
 
+My laptop broke so I did not have enough time to complete the UI but the intended flow is as followed:
+
+1. Client app uses Firebase Auth to authenticate
+2. Asynchronously, client app will initialize FCM to listen for notifications
+3. (Depreciated) client app will update notification token using the `/notif` endpoint
+4. Client app POSTs basic user details to `/user` endpoint
+5. Client app can POST, GET, PATCH, DELETE `/post` endpoint for adding/deleting/updating or viewing posts
+6. On opening a post, the client will subscribe to the topic `$postId` via FCM for realtime view count updates
+7. On closing the app, the client will unsubscribe from the topic `$postId` to prevent unnecessary bandwidth usage and unnecessary notifications sent from server.
+
+The API part of this can be tested by requesting the endpoints as described below: 
+
+
 ## Authentication/Sign In
 
 Authentication is being done using Firebase Auth on the client side and the User Details are then stored in the database using the following endpint
