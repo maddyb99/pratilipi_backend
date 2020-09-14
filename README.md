@@ -20,6 +20,16 @@ My laptop broke so I did not have enough time to complete the UI but the intende
 
 The API part of this can be tested by requesting the endpoints as described below: 
 
+> Note: `/notif` endpoint has been depreciated because: 
+
+>> This endpoint updated the FCM Token generated for each user. This could then be used to notify a client about changes in reader count. 
+
+>> This was particularly useful as I was saving the storyId currently being viewed by user and therefore only a subset of users would recieve data.
+
+>> I stoped using selective notification as it was time intensive to check for users reading the post in favour of topics.
+
+>> So, each user, when opening the post, would automatically subscribed(client side) to the topic `$postId` on opening it and any changes in that post would be sent to them(server sends). On closing the post, the user will be unsubscribed automatically(client side).
+
 
 ## Authentication/Sign In
 
@@ -47,6 +57,55 @@ res:
 ```
 201 : `Created a new user: ${user_object}`
 400 : `User should only contains firstName, lastName and email!`
+```
+
+#### Patch
+
+req:
+```json
+header: {
+  "Authorization": "<API-KEY>"
+}
+params: {
+  "postId": "<User id to be patched>",
+}
+body: {
+  "uid": "<UID from firebase auth>",
+  "name": "<Name of user>",
+  "mobile": "<Mobile Number>",
+  "profilePic": "<Link to profile Picture>"
+}
+```
+
+res:
+
+```
+204 : `Update a new user: ${updatedDoc}`
+400 : `Invalid request body!`
+403 : `Forbidden request!`
+```
+
+#### Get
+
+req:
+```json
+header: {
+  "Authorization": "<API-KEY>"
+}
+params: {
+  "postId": "<User id to be patched>",
+}
+```
+
+res:
+```
+200 :  {
+  "uid": "<UID from firebase auth>",
+  "name": "<Name of user>",
+  "mobile": "<Mobile Number>",
+  "profilePic": "<Link to profile Picture>"
+}
+400 : `Cannot get user: ${error}`
 ```
 
 #### Delete
@@ -78,6 +137,8 @@ When a new user requests to view a post, all subscribers of the topic `$postId` 
 
 #### Post
 
+Saves a new post to the database and links it to the author of the post.
+
 req:
 ```json
 header: {
@@ -94,11 +155,90 @@ body: {
 res:
 
 ```
-201 : `Post is deleted: ${deletedPost}`
+201 : `Created a new post: ${newDoc.id}, Updated references:${result}`
 400 : `Error: ${error}`
 ```
 
+#### Get
+req:
+```json
+header: {
+  "Authorization": "<API-KEY>"
+}
+params: {
+  "postId": "<Post id to be fetched>",
+  "userId": "<ID of the user requesting the post>"
+}
+```
+
+res:
+
+If all params are passed:
+```
+200 :  {
+  "uid": "<UID of author>",
+  "author": "<Name of author>",
+  "title": "<Title of post>",
+  "content": "<Content of post>",
+  "visitCount": "<no of total unique users viewing the post>"
+  "visitors": ["user1","user2",...]
+}
+400 : `Cannot get post: ${error}`
+```
+This will also update visitor count on all users reading the story only if a new unique user requests for the post
+
+
+If some or no parameters are passed:
+
+```
+200 :  [
+  {
+    "uid": "<UID of author>",
+    "author": "<Name of author>",
+    "title": "<Title of post>",
+    "content": "<Content of post>",
+    "visitCount": "<no of total unique users viewing the post>"
+    "visitors": ["user1","user2",...]
+  },
+  {
+    "uid": "<UID of author>",
+    "author": "<Name of author>",
+    "title": "<Title of post>",
+    "content": "<Content of post>",
+    "visitCount": "<no of total unique users viewing the post>"
+    "visitors": ["user1","user2",...]
+  },
+  .
+  .
+  .
+]
+400 : `Cannot get post: ${error}`
+```
+#### Patch
+
+req:
+```json
+header: {
+  "Authorization": "<API-KEY>"
+}
+params: {
+  "postId": "<Post id to be patched>",
+}
+body: {
+  "uid": "<UID from firebase auth>",
+  "author": "<Name of user>",
+  "title": "<Title of post>",
+  "content": "<Content of post>"
+}
+```
+res:
+```
+204 : `Update a new post: ${updatedDoc}`
+400 : `Invalid request body!`
+```
 #### Delete
+
+Deletes a post from the database and removes its links from theauthor.
 
 req:
 ```json
@@ -113,7 +253,7 @@ params: {
 res:
 
 ```
-204 : `Created a new user: ${post_object}`
+204 : `Post is deleted: ${deletedPost}`
 400 : `Error: ${error}`
 ```
 
@@ -122,9 +262,7 @@ res:
 This endpoint updates the FCM Token generated for each user. This could then be used to notify a client about changes in reader count. 
 
 This was particularly useful as I was saving the storyId currently being viewed by user and therefore only a subset of users would recieve data.
-But, I stoped using selective notification as it was time intensive to check for users reading the post in favour of topics.
 
-So, each user, when opening the post, would automatically subscribed(client side) to the topic `$postId` on opening it and any changes in that post would be sent to them(server sends). On closing the post, the user will be unsubscribed automatically(client side).
 ### /notif
 
 #### Post
