@@ -6,8 +6,10 @@ class Post {
     public title: String = "",
     public content: String = "",
     public author: string = "",
-    public uid: string = ""
-  ) {}
+    public uid: string = "",
+    public visitors: Array<string> = [],
+    public visitCount: Number = 0
+  ) { }
 }
 
 const userReqValidator = (arr: any[], target: any[]) =>
@@ -26,7 +28,10 @@ postModule.post("/", async (req, res) => {
       content: req.body["content"],
       author: req.body["author"],
       uid: req.body["uid"],
+      visitors: [],
+      visitCount: 0
     };
+    console.log(post);
     const newDoc = await db.collection(postCollection).add(post);
     const result = await db
       .doc(`Users/${post.uid}`)
@@ -43,9 +48,10 @@ postModule.post("/", async (req, res) => {
       docId: newDoc.id,
     });
   } catch (error) {
+    console.log(error);
     res
       .status(400)
-      .send(`Post should only contains firstName, lastName and location!`);
+      .send(`Post should only contains firstName, lastName and location!${error}`);
   }
 });
 
@@ -63,27 +69,47 @@ postModule.patch("/:postId", async (req, res) => {
   res.status(204).send(`Update a new post: ${updatedDoc}`);
 });
 
-// View a post
-postModule.get("/:postId", async (req, res) => {
-  db.collection(postCollection)
-    .doc(req.params.postId)
-    .get()
-    .then((doc) => res.status(200).send(doc))
-    .catch((error) => res.status(400).send(`Cannot get post: ${error}`));
-});
 
 // View all posts
-// postModule.get("/", (req, res) => {
-//   console.log("all");
-//   db.collection(postCollection).
-//   firebaseHelper.firestore
-//     .backup(db, postCollection)
-//     .then((data) => {
-//       const _data = Object(data)[postCollection];
-//       return res.status(200).send(Object.keys(_data).map((key) => _data[key]));
-//     })
-//     .catch((error) => res.status(400).send(`Cannot get posts: ${error}`));
-// });
+postModule.get("/", async (req, res) => {
+  console.log("all");
+  console.log(req.params);
+  // let findoc;
+  // let response=undefined;
+  if (req.query !== undefined && ("postId" in req.query)) {
+    console.log("postId" in req.query);
+    const postId: string = req.query.postId as string;
+    const userId: string = req.query.userId as string;
+    console.log(postId);
+    await db.collection(postCollection)
+      .doc(postId)
+      .get()
+      .then((doc) => {
+        console.log("cp1");
+        if (doc.get("visitors").includes(userId))
+          return res.status(200).send(doc);
+        else {
+          console.log("cp2");
+          const ans = doc.ref.update({ visitors: doc.get("visitors")[0] === undefined ? [userId] : updatedb.FieldValue.arrayUnion(userId), visitCount: updatedb.FieldValue.increment(1) });
+          console.log(doc.data());
+          console.log(ans)
+          return res.status(200).send(doc.data());
+        }
+      })
+      .catch((error) => res.status(400).send(`Cannot get post: ${error}`));
+  }
+  else {
+    console.log(req.query);
+    console.log(req.query !== undefined && ("postId" in req.query));
+    let arr: any;
+    arr = [];
+    return db.collection(postCollection).get().then((snap) => {
+      snap.docs.forEach((doc) => arr.push(doc.data()));
+      return res.status(200).send(arr);
+    });
+  }
+  return;
+});
 
 // Delete a post
 postModule.delete("/:postId", async (req, res) => {
